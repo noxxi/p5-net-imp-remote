@@ -9,8 +9,9 @@ WriteMakefile(
     LICENSE => 'perl',
     PREREQ_PM => {
 	'Net::IMP' => 0.614,
-	'Sereal::Decoder' => 0.36,
-	'Sereal::Encoder' => 0.36,
+	# useful but not necessary
+	#'Sereal::Decoder' => 0.36,
+	#'Sereal::Encoder' => 0.36,
     },
     META_MERGE => {
 	resources => {

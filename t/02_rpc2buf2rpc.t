@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 73;
+use Test::More;
 
 use Net::IMP qw(:DEFAULT :log);
 use Net::IMP::Remote::Protocol;
@@ -8,7 +8,31 @@ use Net::IMP::Debug;
 use Scalar::Util 'dualvar';
 #$DEBUG=1;
 
-for my $impl (qw(Sereal)) {
+my @impl;
+impl: for my $impl (
+    [ Storable => 'Storable' ],
+    [ Sereal => 'Sereal::Encoder!0.36','Sereal::Decoder!0.36' ]
+) {
+    my ($name,@deps) = @$impl;
+    for (@deps) {
+	my ($dep,$want_version) = split('!');
+	if ( ! eval "require $dep" ) {
+	    diag("cannot load $dep");
+	    next impl;
+	} elsif ( $want_version ) {
+	    no strict 'refs';
+	    my $v = ${"${dep}::VERSION"};
+	    if ( ! $v or $v < $want_version ) {
+		diag("wrong version $dep - have $v want $want_version");
+		next impl;
+	    }
+	}
+    }
+    push @impl,$name;
+}
+
+plan tests => 73*@impl;
+for my $impl (@impl) {
     my $class = Net::IMP::Remote::Protocol->load_implementation($impl);
     ok($class,"loaded impl $impl");
     my $ser = $class->new;

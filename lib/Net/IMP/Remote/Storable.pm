@@ -1,20 +1,16 @@
-package Net::IMP::Remote::Sereal;
+package Net::IMP::Remote::Storable;
 
 use strict;
 use warnings;
 use Net::IMP::Remote::Protocol;
 use Net::IMP qw(:DEFAULT :log);
 use Net::IMP::Debug;
-use Sereal::Encoder 0.36;
-use Sereal::Decoder 0.36;
+use Storable ();
 
 my $wire_version = 0x00000001;
 
 sub new {
-    bless {
-	encoder => Sereal::Encoder->new,
-	decoder => Sereal::Decoder->new({ incremental => 1 }),
-    }, shift;
+    bless {}, shift;
 }
 
 # data type mapping int -> dualvar
@@ -157,22 +153,24 @@ $buf2arg{ IMPRPC_INTERFACE+0 } = $buf2arg{ IMPRPC_GET_INTERFACE+0 };
 sub buf2rpc {
     my ($self,$rdata) = @_;
     decode:
-    my $out = undef;
-    eval { $self->{decoder}->decode( $$rdata, $out ) } or return;
-    return if ! $out;
-    if ( $out->[0] == IMPRPC_SET_VERSION ) {
-	die "wrong version $out->[1], can do $wire_version only"
-	    if $out->[1] != $wire_version;
+    return if length($$rdata)<6;
+    my ($len) = unpack("x2L",$$rdata);
+    return if length($$rdata) - 6 < $len;
+    my ($op,$args) = unpack("SL/a*",$$rdata);
+    substr($$rdata,0,$len+6,'');
+    $args = Storable::thaw($args);
+    if ( $op == IMPRPC_SET_VERSION ) {
+	die "wrong version $args->[0], can do $wire_version only"
+	    if $args->[0] != $wire_version;
 	return if $$rdata eq '';
 	goto decode;
     } 
-    my ($op,@args) = @$out;
     $op = $rpc_i2d{$op};
     if ( my $sub = $buf2arg{$op+0} ) {
 	#$DEBUG && debug("calling buf2arg for $op");
-	@args = $sub->(@args);
+	$args = [ $sub->(@$args) ]
     }
-    return [$op,@args];
+    return [$op,@$args];
 }
 
 sub rpc2buf {
@@ -182,8 +180,7 @@ sub rpc2buf {
 	#$DEBUG && debug("calling arg2buf for $op");
 	@args = $sub->(@args);
     }
-    $op += 0; # dualvar -> int
-    $self->{encoder}->encode([$op,@args])
+    return pack("SL/a*",$op+0,Storable::freeze(\@args));
 }
 
 sub init { 

@@ -31,7 +31,7 @@ use constant IMPRPC_RESULT        => dualvar(0x4103,'result');
 
 sub load_implementation {
     shift;
-    my $impl = shift || 'Sereal';
+    my $impl = shift || 'Storable';
     $impl = "Net::IMP::Remote::$impl";
     $impl =~m{^[\w:]+$} and eval "require $impl" 
 	or croak("bad wire implementation $impl: $@");

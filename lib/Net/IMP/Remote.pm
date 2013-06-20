@@ -10,7 +10,7 @@ use IO::Socket::UNIX;
 use Net::IMP::Debug;
 use Carp;
 
-our $VERSION = '0.001';
+our $VERSION = '0.002';
 
 my $INETCLASS = 'IO::Socket::INET';
 BEGIN {
@@ -69,8 +69,10 @@ implementation feature connection using UNIX domain sockets or TCP sockets.
 
 The RPC functionality is described in L<Net::IMP::Remote::Protocol>.
 L<Net::IMP::Remote::Connection> implements interactions using the defined RPCs
-over a flexible wire protocol. The default wire implementation using the Sereal
-library is done in L<Net::IMP::Remote::Sereal>.
+over a flexible wire protocol. The default wire implementation using the
+Storable library is done in L<Net::IMP::Remote::Storable>. There is an
+alternative implementation with the Sereal library in
+L<Net::IMP::Remote::Sereal>.
 L<Net::IMP::Remote::Client> and L<Net::IMP::Remote::Server> implement the
 client and server side of the connection, while L<Net::IMP::Remote> finally
 implements the usual IMP interface, so that this plugin can be used whereever
@@ -130,6 +132,7 @@ See TODO file in distribution
 
 =head1 SEE ALSO
 
+L<Storable>
 L<Sereal::Encoder>
 L<Sereal::Decoder>
 
