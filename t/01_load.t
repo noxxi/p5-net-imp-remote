@@ -10,7 +10,8 @@ test: for (
     [ 'Net::IMP::Remote' ],
     [ 'Net::IMP::Remote::Client' ],
     [ 'Net::IMP::Remote::Server' ],
-    [ 'Net::IMP::Remote::Sereal' ],
+    [ 'Net::IMP::Remote::Storable' ],
+    [ 'Net::IMP::Remote::Sereal' => 'Sereal::Encoder!0.36','Sereal::Decoder!0.36' ],
     [ 'bin/imprpc_server.pl' => 'AnyEvent!6.12' ],
     ){
     my ($name,@deps) = @$_;

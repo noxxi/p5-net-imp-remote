@@ -33,6 +33,7 @@ impl: for my $impl (
 
 plan tests => 73*@impl;
 for my $impl (@impl) {
+    diag("implementation $impl");
     my $class = Net::IMP::Remote::Protocol->load_implementation($impl);
     ok($class,"loaded impl $impl");
     my $ser = $class->new;

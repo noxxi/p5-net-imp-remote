@@ -1,2 +1,9 @@
-0.001 2013/06/21 
+0.003 2013/06/21 
+- fixed dependency in 01_load to Sereal, added check for Storable
+- Connection: return EIO instead of ENODATA on eof on incomplete package,
+  EIO seems to be more available than ENODATA
+- add Storable to MANIFEST
+0.002 2013/06/20 
+- new default wire implementation Storable
+0.001 2013/06/20 
 - initial, kind of working version

@@ -6,7 +6,7 @@ use fields qw(ev fd rbuf wbuf onwrite onclose need_more_rbuf wire analyzer max_a
 use Net::IMP::Remote::Protocol;
 use Net::IMP::Debug;
 use Scalar::Util 'weaken';
-use Errno 'ENODATA';
+use Errno 'EIO';
 use Carp;
 
 sub new {
@@ -172,7 +172,7 @@ sub nextop {
 		return 0
 	    } else {
 		# consider eof within data block as error
-		$! = ENODATA;
+		$! = EIO;
 		$self->close("eof inside operation");
 		return;
 	    }
