@@ -85,7 +85,7 @@ sub data {
 	$self->{conn}->rpc([IMPRPC_EXCEPTION,$id,"no analyzer $id"]);
 	return;
     };
-    debug("got data($dir,%s,$type len=%d",$offset//"<undef>",length($data));
+    debug("got data($dir,%s,$type,datalen=%d)",$offset//"<undef>",length($data));
     ref($obj) or return; # dummy
     $obj->data($dir,$data,$offset,$type);
 }

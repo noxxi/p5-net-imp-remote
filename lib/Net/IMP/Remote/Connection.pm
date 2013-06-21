@@ -80,7 +80,7 @@ sub del_analyzer {
 sub rpc {
     my ($self,$call,$actions) = @_;
     my $buf = $self->{wire}->rpc2buf($call);
-    if ( wantarray ) {
+    if ( defined wantarray ) {
 	debug("blocking rpc $call->[0]");
 	return $self->write($buf) && 
 	    ( $actions ? $self->nextop($actions) : 1 )
@@ -212,6 +212,7 @@ sub nextop {
     $self->{need_more_rbuf} = $self->{rbuf} eq '';
 
     my ($type,@args) = @$rpc;
+    #debug(Dumper($rpc)); use Data::Dumper;
     debug("processing $type");
     my $act = $actions->{$type+0} or do {
 	$self->close( "no handler for return type $type" );

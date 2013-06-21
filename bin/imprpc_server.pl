@@ -62,7 +62,7 @@ for my $mod (@mod) {
     my ($class,$args) = $mod =~m{^([a-z][\w:]*)(?:=(.*))?$}i
 	or die "invalid module $mod";
     eval "require $class" or die "cannot load $class: $@";
-    my %args = $class->str2cfg($args);
+    my %args = defined $args ? $class->str2cfg($args) : ();
     if ( my @err = $class->validate_cfg(%args)) {
 	die "wrong args for $class: @err";
     } 

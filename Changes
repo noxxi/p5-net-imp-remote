@@ -1,3 +1,7 @@
+0.004 2013/06/21 
+- move mappings between dualvars for various types and integer representation
+  for wire transport into DualvarMapping, gets used from Storable and Sereal
+- try to get unknown data types at runtime using Net::IMP::IMP_DATA_TYPES
 0.003 2013/06/21 
 - fixed dependency in 01_load to Sereal, added check for Storable
 - Connection: return EIO instead of ENODATA on eof on incomplete package,

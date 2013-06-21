@@ -10,7 +10,7 @@ use IO::Socket::UNIX;
 use Net::IMP::Debug;
 use Carp;
 
-our $VERSION = '0.003';
+our $VERSION = '0.004';
 
 my $INETCLASS = 'IO::Socket::INET';
 BEGIN {
