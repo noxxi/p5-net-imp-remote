@@ -48,7 +48,7 @@ sub close:method {
 	$ev->onread($self->{fd},undef);
 	$ev->onwrite($self->{fd},undef);
     }
-    $self->{onclose}->() if $self->{onclose};
+    $self->{onclose}->($error) if $self->{onclose};
     %$self = ();
 }
 
@@ -67,6 +67,13 @@ sub add_analyzer {
     return $id;
 }
 
+sub weak_add_analyzer {
+    my $self = shift;
+    my $id = $self->add_analyzer(@_) or return;
+    weaken( $self->{analyzer}{$id} );
+    return $id;
+}
+
 sub get_analyzer {
     my ($self,$id) = @_;
     $self->{analyzer}{$id};
@@ -79,7 +86,11 @@ sub del_analyzer {
 
 sub rpc {
     my ($self,$call,$actions) = @_;
-    my $buf = $self->{wire}->rpc2buf($call);
+    my $wire = $self->{wire} or do {
+	debug("no more wire there to call @$call");
+	return;
+    };
+    my $buf = $wire->rpc2buf($call);
     if ( defined wantarray ) {
 	debug("blocking rpc $call->[0]");
 	return $self->write($buf) && 

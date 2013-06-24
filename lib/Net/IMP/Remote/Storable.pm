@@ -35,7 +35,7 @@ sub buf2rpc {
 sub rpc2buf {
     my ($self,$rpc) = @_;
     my ($op,@args) = @{ rpc_d2i($rpc) };
-    return pack("SL/a*",$op,Storable::freeze(\@args));
+    return pack("SL/a*",$op,Storable::nfreeze(\@args));
 }
 
 sub init { 

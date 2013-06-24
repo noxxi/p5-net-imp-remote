@@ -147,6 +147,8 @@ The arguments following the C<result_type> are specific to the type, e.g.
 
 =over 4 IMP_DENY: no more arguments
 
+=over 4 IMP_FATAL: char reason[]
+
 =over 4 IMP_TOSENDER: dir, char data[]
 
 =over 4 IMP_PAUSE: dir

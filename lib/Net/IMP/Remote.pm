@@ -2,15 +2,18 @@ use strict;
 use warnings;
 
 package Net::IMP::Remote;
-use base 'Net::IMP::Remote::Client';
+use base 'Net::IMP::Base';
+use fields qw(factory interface);
+use Net::IMP::Remote::Client;
 use Net::IMP::Remote::Connection;
 use Net::IMP::Remote::Protocol;
 use IO::Socket::INET;
 use IO::Socket::UNIX;
 use Net::IMP::Debug;
+use Scalar::Util 'weaken';
 use Carp;
 
-our $VERSION = '0.004';
+our $VERSION = '0.005';
 
 my $INETCLASS = 'IO::Socket::INET';
 BEGIN {
@@ -32,9 +35,27 @@ sub validate_cfg {
 
 sub new_factory {
     my ($class,%args) = @_;
-    my $ev = delete $args{eventlib} or croak(
+    my $self = $class->SUPER::new_factory(%args);
+    $self->{factory} = $self->_reconnect();
+    return $self;
+}
+
+sub set_interface {
+    my ($self,$if) = @_;
+    $self->{interface} = $if; # store for reconnects
+    return ( $self->{factory} ||= $self->_reconnect() )->set_interface($if);
+}
+
+sub get_interface {
+    my $self = shift;
+    return ( $self->{factory} ||= $self->_reconnect() )->get_interface(@_);
+}
+
+sub _reconnect {
+    my $self = shift;
+    my $addr = $self->{factory_args}{addr} or croak("no addr given");
+    my $ev = $self->{factory_args}{eventlib} or croak(
 	"data provider does not offer integration into its event loop with eventlib argument");
-    my $addr = delete $args{addr} or croak("no addr given");
     my $fd = $addr =~m{/} 
 	? IO::Socket::UNIX->new(Peer => $addr, Type => SOCK_STREAM) 
 	: $INETCLASS->new($addr)
@@ -42,11 +63,28 @@ sub new_factory {
     $fd->blocking(0);
     debug("connected to $addr");
     my $conn = Net::IMP::Remote::Connection->new($fd,0,
-	impl => delete $args{impl}, 
-	eventlib => $ev
+	impl => $self->{factory_args}{impl}, 
+	eventlib => $ev,
     );
-    my $self =  $class->SUPER::new_factory(%args, conn => $conn, eventlib => $ev);
-    return $self;
+    weaken(my $wself=$self);
+    $conn->onClose(sub {
+	my $why = shift;
+	$wself->{factory} = undef; # reconnect on new_analyzer
+    });
+    my $factory = Net::IMP::Remote::Client->new_factory(
+	%{ $self->{factory_args}},
+	conn => $conn, 
+    ) or die "cannot create factory";
+
+    # set last used interface again
+    $factory = $factory->set_interface($self->{interface}) 
+	if $self->{interface};
+    return $factory;
+}
+
+sub new_analyzer {
+    my ($self,%args) = @_;
+    return ( $self->{factory} ||= $self->_reconnect() )->new_analyzer(%args);
 }
 
 

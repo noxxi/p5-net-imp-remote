@@ -1,3 +1,6 @@
+0.005 2013/06/24
+- attempt to reconnect after lost connection, but all existing analyzers are lost
+- resolved leak of analyzer
 0.004 2013/06/21 
 - move mappings between dualvars for various types and integer representation
   for wire transport into DualvarMapping, gets used from Storable and Sereal

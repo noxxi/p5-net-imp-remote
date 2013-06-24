@@ -6,6 +6,7 @@ use base 'Net::IMP::Base';
 use fields qw(id);
 use Net::IMP;
 use Net::IMP::Remote::Protocol;
+use Net::IMP::Debug;
 use Scalar::Util 'weaken';
 use Carp;
 
@@ -51,8 +52,7 @@ sub new_analyzer {
     my ($self,%ctx) = @_;
     my $obj = $self->SUPER::new_analyzer(%ctx);
     my $conn = $self->{factory_args}{conn};
-    weaken(my $wobj = $obj);
-    my $id = $obj->{id} = $conn->add_analyzer($wobj);
+    my $id = $obj->{id} = $conn->weak_add_analyzer($obj);
     $conn->rpc([ IMPRPC_NEW_ANALYZER,$id,\%ctx ]);
     return $obj;
 }
@@ -65,11 +65,16 @@ sub data {
 }
 
 sub close {
-    my $self = shift;
-    my $id = $self->{id} or return;
+    my ($self,$why) = @_;
+    debug("destroy @_");
     my $conn = $self->{factory_args}{conn} or return;
-    $conn->del_analyzer($id);
-    $conn->rpc([ IMPRPC_DEL_ANALYZER,$id ]);
+    if ( my $id = $self->{id} ) {
+	warn "[$id] $why\n" if $why;
+	$conn->del_analyzer($id);
+	$conn->rpc([ IMPRPC_DEL_ANALYZER,$id ]);
+    } else {
+	$self->{factory_args}{conn}->close($why);
+    }
     1;
 }
 
@@ -79,13 +84,12 @@ sub exception {
     my ($self,$id,$msg) = @_;
     if ( $id ) {
 	if ( my $obj = $self->{factory_args}{conn}->get_analyzer($id) ) {
-	    warn "[$id] $msg\n";
-	    $obj->close
+	    $obj->close($msg);
 	} else {
 	    warn "[$id/unknown] $msg\n"
 	}
     } else {
-	die "[*] $msg\n";
+	$self->close("global exception: $msg");
     }
 }
 
