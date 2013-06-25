@@ -13,7 +13,7 @@ use Net::IMP::Debug;
 use Scalar::Util 'weaken';
 use Carp;
 
-our $VERSION = '0.005';
+our $VERSION = '0.006';
 
 my $INETCLASS = 'IO::Socket::INET';
 BEGIN {
@@ -28,6 +28,8 @@ sub validate_cfg {
     my ($class,%args) = @_;
     my @err;
     push @err,"no address given" if ! delete $args{addr};
+    push @err,"invalid value for 'fail'" 
+	if ( delete $args{fail} // 'hard' ) !~m{^(soft|hard)$};
     eval { Net::IMP::Remote::Protocol->load_implementation(delete $args{impl})}
 	or push @err,$@;
     return (@err,$class->SUPER::validate_cfg(%args));
@@ -36,19 +38,35 @@ sub validate_cfg {
 sub new_factory {
     my ($class,%args) = @_;
     my $self = $class->SUPER::new_factory(%args);
-    $self->{factory} = $self->_reconnect();
+    $self->_factory();
     return $self;
 }
 
 sub set_interface {
     my ($self,$if) = @_;
     $self->{interface} = $if; # store for reconnects
-    return ( $self->{factory} ||= $self->_reconnect() )->set_interface($if);
+    return $self->_factory->set_interface($if);
 }
 
 sub get_interface {
     my $self = shift;
-    return ( $self->{factory} ||= $self->_reconnect() )->get_interface(@_);
+    return $self->_factory->get_interface(@_);
+}
+
+sub new_analyzer {
+    my ($self,%args) = @_;
+    return $self->_factory->new_analyzer(%args);
+}
+
+sub _factory {
+    my $self = shift;
+    if ( my $f = $self->{factory} ||= $self->_reconnect() ) {
+	# successful connect to IMP server
+	return $f
+    }
+    # return dummy factory object which supports no interface
+    # and where each analyzer just issues IMP_FATAL
+    return Net::IMP::Remote::_Fail->new_factory(%{ $self->{factory_args}});
 }
 
 sub _reconnect {
@@ -59,7 +77,7 @@ sub _reconnect {
     my $fd = $addr =~m{/} 
 	? IO::Socket::UNIX->new(Peer => $addr, Type => SOCK_STREAM) 
 	: $INETCLASS->new($addr)
-	or die "failed to connect to $addr: $!";
+	or return;
     $fd->blocking(0);
     debug("connected to $addr");
     my $conn = Net::IMP::Remote::Connection->new($fd,0,
@@ -82,11 +100,33 @@ sub _reconnect {
     return $factory;
 }
 
-sub new_analyzer {
-    my ($self,%args) = @_;
-    return ( $self->{factory} ||= $self->_reconnect() )->new_analyzer(%args);
-}
 
+{
+    package Net::IMP::Remote::_Fail;
+    use base 'Net::IMP::Base';
+    use Net::IMP qw(:DEFAULT :log);
+    sub set_interface { return shift } # no change factory
+    sub get_interface { return ()    } # we don't support anything
+    sub data { return }
+
+    sub new_analyzer {
+	my $class = shift;
+	my $self = $class->SUPER::new_analyzer(@_) or return;
+	my $fail = $self->{factory_args}{fail} || 'hard';
+	my $err = $self->{factory_args}{connect_error} || $!;
+	$self->run_callback(
+	    $fail eq 'soft' ? (
+		[ IMP_LOG,0,0,0,IMP_LOG_ERR,
+		    "connect to IMP server failed ($err): pass all" ],
+		[ IMP_PASS,0,IMP_MAXOFFSET ],
+		[ IMP_PASS,1,IMP_MAXOFFSET ],
+	    ):( 
+		[ IMP_FATAL,"connect to IMP server failed ($err)" ] 
+	    )
+	);
+	return $self;
+    }
+}
 
 1;
 __END__
@@ -101,9 +141,10 @@ Net::IMP::Remote - connect to IMP plugins outside the process
 
 =head1 DESCRIPTION
 
-L<Net::IMP::Remote> redirects the interaction with the IMP API to a server
-process, which might be on the local or on a different machine. Current
-implementation feature connection using UNIX domain sockets or TCP sockets.
+L<Net::IMP::Remote> works as a normal IMP analyzer, but sends all API calls to
+a server process, which might be on the local or on a different machine.
+Current implementation feature connection using UNIX domain sockets or TCP
+sockets.
 
 The RPC functionality is described in L<Net::IMP::Remote::Protocol>.
 L<Net::IMP::Remote::Connection> implements interactions using the defined RPCs
@@ -117,9 +158,35 @@ implements the usual IMP interface, so that this plugin can be used whereever
 other IMP plugins can be used, although it's used best in data providers
 offering an integration into their event loop.
 
+=head2 Arguments
+
+This proxy IMP analyzer features the following arguments
+
+=over 4
+
+=item addr ip:port|/path
+
+This describes the address, where the IMP server can be reached. This can be an
+absolute path (UNIX domain socket) or C<ip:port>. IPv6 is supported if
+C<IO::Socket::IP> or C<IO::Socket::INET6> are available.
+
+=item fail 'hard'|'soft'
+
+This defines the behavior in case the connection to the IMP server fails when
+creating a new analyzer object for a connection. On the default 'hard' a failed
+connection will result in an analyzer returning only C<IMP_FATAL>, thus
+blocking all data.
+In case of 'soft' the analyzer will return an error log message but then issue
+an C<IMP_PASS> for both directions, so that data pass unchanged.
+
+If the connections to the IMP server breaks while analysis is already taking
+process it will currently fail hard.
+
+=back
+
 =head2 Implementation and Overhead
 
-Unlike other solutions like ICAP IMP tries to keep the overhead small.
+Unlike other solutions like ICAP, IMP tries to keep the overhead small.
 A new connection to the IMP RPC server is done once, when the factory object is
 created. Traffic for all analyzers created from the factory will be multiplexed
 over the same connection, thus eliminating costly connection setup.

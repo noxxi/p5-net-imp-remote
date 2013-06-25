@@ -1,3 +1,7 @@
+0.006 2013/06/25
+- configurable error handling: hard and soft.
+  In the latter case all traffic is passed unchanged if the connection to the
+  IMP server failed.
 0.005 2013/06/24
 - attempt to reconnect after lost connection, but all existing analyzers are lost
 - resolved leak of analyzer

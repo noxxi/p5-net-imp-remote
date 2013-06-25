@@ -8,7 +8,7 @@ WriteMakefile(
     VERSION_FROM => 'lib/Net/IMP/Remote.pm',
     LICENSE => 'perl',
     PREREQ_PM => {
-	'Net::IMP' => 0.616,
+	'Net::IMP' => 0.617,
 	# useful but not necessary
 	#'Sereal::Decoder' => 0.36,
 	#'Sereal::Encoder' => 0.36,
