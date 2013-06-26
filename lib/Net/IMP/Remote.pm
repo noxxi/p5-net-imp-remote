@@ -3,7 +3,7 @@ use warnings;
 
 package Net::IMP::Remote;
 use base 'Net::IMP::Base';
-use fields qw(factory interface);
+use fields qw(factory pid interface);
 use Net::IMP::Remote::Client;
 use Net::IMP::Remote::Connection;
 use Net::IMP::Remote::Protocol;
@@ -13,7 +13,7 @@ use Net::IMP::Debug;
 use Scalar::Util 'weaken';
 use Carp;
 
-our $VERSION = '0.006';
+our $VERSION = '0.007';
 
 my $INETCLASS = 'IO::Socket::INET';
 BEGIN {
@@ -60,10 +60,17 @@ sub new_analyzer {
 
 sub _factory {
     my $self = shift;
-    if ( my $f = $self->{factory} ||= $self->_reconnect() ) {
-	# successful connect to IMP server
-	return $f
+
+    # close and reconnect after fork
+    my $f = $self->{factory};
+    $f = undef if $f and $self->{pid} != $$;
+    if ( ! $f ) {
+	$f = $self->{factory} = $self->_reconnect();
+	$self->{pid} = $$;
     }
+    # successful connected to IMP server
+    return $f if $f;
+
     # return dummy factory object which supports no interface
     # and where each analyzer just issues IMP_FATAL
     return Net::IMP::Remote::_Fail->new_factory(%{ $self->{factory_args}});
@@ -75,8 +82,8 @@ sub _reconnect {
     my $ev = $self->{factory_args}{eventlib} or croak(
 	"data provider does not offer integration into its event loop with eventlib argument");
     my $fd = $addr =~m{/} 
-	? IO::Socket::UNIX->new(Peer => $addr, Type => SOCK_STREAM) 
-	: $INETCLASS->new($addr)
+	? IO::Socket::UNIX->new(Peer => $addr, Type => SOCK_STREAM, Timeout => 10) 
+	: $INETCLASS->new( PeerAddr => $addr, Timeout => 10)
 	or return;
     $fd->blocking(0);
     debug("connected to $addr");
