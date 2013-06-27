@@ -13,7 +13,7 @@ use Net::IMP::Debug;
 use Scalar::Util 'weaken';
 use Carp;
 
-our $VERSION = '0.007';
+our $VERSION = '0.008';
 
 my $INETCLASS = 'IO::Socket::INET';
 BEGIN {

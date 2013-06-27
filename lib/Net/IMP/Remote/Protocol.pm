@@ -155,6 +155,8 @@ The arguments following the C<result_type> are specific to the type, e.g.
 
 =over 4 IMP_CONTINUE: dir
 
+=over 4 IMP_REPLACE_LATER: dir,offset,endoffset
+
 =over 4 IMP_LOG: dir,offset,len,level,char msg[]
 
 =over 4 IMP_ACCTFIELD: string key, char value[]
