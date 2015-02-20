@@ -1,4 +1,6 @@
-0.007 2013/06/27
+0.009 2015/02/20
+- support extended information in IMP_LOG and IMP_DENY
+0.008 2013/06/27
 - support for IMP_REPLACE_LATER
 0.007 2013/06/26
 - reconnect after fork

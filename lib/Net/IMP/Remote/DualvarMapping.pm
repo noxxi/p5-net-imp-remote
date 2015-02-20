@@ -110,8 +110,8 @@ my %args_d2i = (
 	# @_ -> analyzer_id, result_type_id, ...
 	my ($id,$rtype) = @_;
 	if ( $rtype == IMP_LOG ) {
-	    # id,type - dir,offset,len,level,msg
-	    return ($id,$rtype+0,@_[2,3,4],$_[5]+0,$_[6]);
+	    # id,type - dir,offset,len,level,msg,@extmsg
+	    return ($id,$rtype+0,@_[2,3,4],$_[5]+0,@_[6..$#_]);
 	} else {
 	    return ($id,$rtype+0,@_[2..$#_]);
 	}
@@ -150,8 +150,8 @@ my %args_i2d = (
 	# @_ -> analyzer_id, result_type_id, ...
 	my ($id,$rtype) = @_;
 	if ( $rtype == IMP_LOG ) {
-	    # id,type - dir,offset,len,level,msg
-	    return ($id,$rt_i2d{$rtype},@_[2,3,4],$ll_i2d{$_[5]},$_[6]);
+	    # id,type - dir,offset,len,level,msg,@extmsg
+	    return ($id,$rt_i2d{$rtype},@_[2,3,4],$ll_i2d{$_[5]},@_[6..$#_]);
 	} else {
 	    return ($id,$rt_i2d{$rtype},@_[2..$#_]);
 	}

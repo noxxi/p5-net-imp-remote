@@ -143,9 +143,9 @@ The arguments following the C<result_type> are specific to the type, e.g.
 
 =over 4 IMP_REPLACE: dir,offset, char newdata[]
 
-=over 4 IMP_DENY: dir, char reason[]
+=over 4 IMP_DENY: dir, char reason[], char key1[], char value1[], ....
 
-=over 4 IMP_DENY: no more arguments
+=over 4 IMP_DROP: no more arguments
 
 =over 4 IMP_FATAL: char reason[]
 
@@ -157,7 +157,7 @@ The arguments following the C<result_type> are specific to the type, e.g.
 
 =over 4 IMP_REPLACE_LATER: dir,offset,endoffset
 
-=over 4 IMP_LOG: dir,offset,len,level,char msg[]
+=over 4 IMP_LOG: dir,offset,len,level,char msg[], char key1[], char value1[], ....
 
 =over 4 IMP_ACCTFIELD: string key, char value[]
     

@@ -41,14 +41,16 @@ BEGIN {
 my (@debug_pkg,@mod,$impl);
 GetOptions(
     'h|help'     => sub { usage() },
-    'd|debug:s'  => \@debug_pkg,
+    'd|debug:s'  => sub {
+	$DEBUG = 1;
+	push @debug_pkg,$_[1] if $_[1];
+    },
     'M|module=s' => \@mod,
     'I|impl=s'   => \$impl,
 );
 my @listen = @ARGV;
 
 if (@debug_pkg) {
-    $DEBUG = 1;
     # glob2rx
     s{(\*)|(\?)|([^*?]+)}{ $1 ? '.*': $2 ? '.': "\Q$3" }esg for (@debug_pkg);
     $DEBUG_RX = join('|',@debug_pkg);
